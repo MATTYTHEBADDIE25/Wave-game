@@ -1,1 +1,1 @@
-# Wave-game
+# wave-game
