@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Signal Sync – Spectrum Party Game</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #111827;
+      --accent: #38bdf8;
+      --accent-soft: rgba(56, 189, 248, 0.2);
+      --text-main: #e5e7eb;
+      --text-muted: #9ca3af;
+      --danger: #f97373;
+      --success: #4ade80;
+    }
+
+    * {
+      box-sizing: border-box;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+        sans-serif;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: radial-gradient(circle at top, #1f2937 0, #020617 55%);
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .app {
+      width: 100%;
+      max-width: 900px;
+      background: linear-gradient(145deg, #020617, #020617, #020617);
+      border-radius: 18px;
+      padding: 20px 20px 24px;
+      box-shadow:
+        0 24px 60px rgba(0, 0, 0, 0.7),
+        0 0 0 1px rgba(148, 163, 184, 0.1);
+      border: 1px solid rgba(148, 163, 184, 0.25);
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+
+    .title {
+      font-size: 1.4rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .title span.logo-dot {
+      width: 12px;
+      height: 12px;
+      border-radius: 999px;
+      background: radial-gradient(circle at 30% 30%, #f97316, #ec4899);
+      box-shadow: 0 0 12px rgba(236, 72, 153, 0.9);
+    }
+
+    .subtitle {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    .scoreboard {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      font-size: 0.9rem;
+    }
+
+    .score-pill {
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .score-pill span.label {
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .score-pill span.value {
+      font-weight: 600;
+    }
+
+    main {
+      display: grid;
+      grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+      gap: 18px;
+    }
+
+    @media (max-width: 768px) {
+      main {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .panel {
+      background: radial-gradient(circle at top left, #020617 0, #020617 60%);
+      border-radius: 16px;
+      padding: 16px 16px 18px;
+      border: 1px solid rgba(148, 163, 184, 0.25);
+      box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.9);
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .panel-title {
+      font-size: 0.9rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--text-muted);
+    }
+
+    .badge {
+      font-size: 0.7rem;
+      padding: 3px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(148, 163, 184, 0.4);
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+    }
+
+    .spectrum {
+      margin-bottom: 16px;
+    }
+
+    .spectrum-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.9rem;
+      margin-bottom: 6px;
+    }
+
+    .spectrum-labels span {
+      max-width: 45%;
+    }
+
+    .spectrum-labels span.left {
+      text-align: left;
+      color: #f97373;
+    }
+
+    .spectrum-labels span.right {
+      text-align: right;
+      color: #4ade80;
+    }
+
+    .spectrum-bar {
+      position: relative;
+      height: 14px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #f97373, #facc15, #4ade80);
+      overflow: hidden;
+      box-shadow:
+        inset 0 0 0 1px rgba(15, 23, 42, 0.9),
+        0 0 18px rgba(56, 189, 248, 0.35);
+    }
+
+    .spectrum-bar::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 50% -40%, rgba(248, 250, 252, 0.4), transparent 60%);
+      opacity: 0.4;
+      pointer-events: none;
+    }
+
+    .target-indicator,
+    .guess-indicator {
+      position: absolute;
+      top: -4px;
+      width: 2px;
+      height: 22px;
+      border-radius: 999px;
+      transform: translateX(-50%);
+      pointer-events: none;
+    }
+
+    .target-indicator {
+      background: var(--accent);
+      box-shadow:
+        0 0 10px rgba(56, 189, 248, 0.9),
+        0 0 24px rgba(56, 189, 248, 0.6);
+      opacity: 0;
+      transition: opacity 0.25s ease;
+    }
+
+    .guess-indicator {
+      background: #e5e7eb;
+      box-shadow: 0 0 10px rgba(148, 163, 184, 0.9);
+    }
+
+    .slider-row {
+      margin-top: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .slider-row label {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+    }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 6px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.9);
+      outline: none;
+      cursor: pointer;
+      box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.4);
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, #f9fafb, #e5e7eb);
+      border: 2px solid var(--accent);
+      box-shadow:
+        0 0 0 4px var(--accent-soft),
+        0 0 18px rgba(56, 189, 248, 0.8);
+      margin-top: -6px;
+    }
+
+    input[type="range"]::-moz-range-thumb {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 30%, #f9fafb, #e5e7eb);
+      border: 2px solid var(--accent);
+      box-shadow:
+        0 0 0 4px var(--accent-soft),
+        0 0 18px rgba(56, 189, 248, 0.8);
+    }
+
+    input[type="range"]::-moz-range-track {
+      height: 6px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.9);
+      box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.4);
+    }
+
+    .clue-box {
+      margin-top: 10px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px dashed rgba(148, 163, 184, 0.5);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .clue-text {
+      font-size: 0.95rem;
+    }
+
+    .clue-placeholder {
+      color: var(--text-muted);
+      font-style: italic;
+    }
+
+    .clue-input-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .clue-input-row input {
+      flex: 1;
+      padding: 7px 9px;
+      border-radius: 8px;
+      border: 1px solid rgba(148, 163, 184, 0.5);
+      background: rgba(15, 23, 42, 0.9);
+      color: var(--text-main);
+      font-size: 0.9rem;
+    }
+
+    .clue-input-row input::placeholder {
+      color: var(--text-muted);
+    }
+
+    .btn {
+      border: none;
+      border-radius: 999px;
+      padding: 7px 14px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.15s ease, transform 0.05s ease, box-shadow 0.15s ease;
+      white-space: nowrap;
+    }
+
+    .btn-primary {
+      background: radial-gradient(circle at 30% 0, #38bdf8, #0ea5e9);
+      color: #0b1120;
+      box-shadow:
+        0 0 18px rgba(56, 189, 248, 0.8),
+        0 0 0 1px rgba(15, 23, 42, 0.9);
+    }
+
+    .btn-secondary {
+      background: rgba(15, 23, 42, 0.9);
+      color: var(--text-main);
+      border: 1px solid rgba(148, 163, 184, 0.6);
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--text-muted);
+      border: 1px dashed rgba(148, 163, 184, 0.5);
+    }
+
+    .btn:active {
+      transform: translateY(1px);
+      box-shadow: none;
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: default;
+      box-shadow: none;
+    }
+
+    .actions-row {
+      margin-top: 14px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .info-panel {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    .info-panel strong {
+      color: var(--text-main);
+      font-weight: 600;
+    }
+
+    .info-list {
+      margin-top: 8px;
+      padding-left: 16px;
+    }
+
+    .info-list li {
+      margin-bottom: 4px;
+    }
+
+    .result {
+      margin-top: 12px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(148, 163, 184, 0.5);
+      font-size: 0.9rem;
+    }
+
+    .result-line {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 4px;
+    }
+
+    .result-line span.label {
+      color: var(--text-muted);
+    }
+
+    .result-line span.value {
+      font-weight: 600;
+    }
+
+    .result-score {
+      margin-top: 6px;
+      font-weight: 600;
+    }
+
+    .result-score.good {
+      color: var(--success);
+    }
+
+    .result-score.bad {
+      color: var(--danger);
+    }
+
+    .tiny {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div>
+        <div class="title">
+          <span class="logo-dot"></span>
+          SIGNAL SYNC
+        </div>
+        <div class="subtitle">A spectrum guessing party game for shared brains and loud opinions.</div>
+      </div>
+      <div class="scoreboard">
+        <div class="score-pill">
+          <span class="label">Round</span>
+          <span class="value" id="roundNumber">1</span>
+        </div>
+        <div class="score-pill">
+          <span class="label">Total Score</span>
+          <span class="value" id="totalScore">0</span>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <!-- Left: Spectrum & interaction -->
+      <section class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Spectrum</div>
+          <div class="badge" id="roleBadge">Tuner sets clue</div>
+        </div>
+
+        <div class="spectrum">
+          <div class="spectrum-labels">
+            <span class="left" id="leftLabel">Cold</span>
+            <span class="right" id="rightLabel">Hot</span>
+          </div>
+          <div class="spectrum-bar" id="spectrumBar">
+            <div class="target-indicator" id="targetIndicator"></div>
+            <div class="guess-indicator" id="guessIndicator"></div>
+          </div>
+        </div>
+
+        <div class="slider-row">
+          <label for="guessSlider">Guessers: drag to where you think the target is</label>
+          <input type="range" id="guessSlider" min="0" max="100" value="50" />
+        </div>
+
+        <div class="clue-box">
+          <div class="clue-text" id="clueDisplay">
+            <span class="clue-placeholder">Tuner: secretly reveal the target, then type a clue and lock it in.</span>
+          </div>
+          <button class="btn btn-ghost" id="revealTargetBtn">Reveal target</button>
+        </div>
+
+        <div class="clue-input-row">
+          <input
+            type="text"
+            id="clueInput"
+            placeholder="One word or short phrase as your clue"
+          />
+          <button class="btn btn-primary" id="lockClueBtn">Lock clue</button>
+        </div>
+
+        <div class="actions-row">
+          <button class="btn btn-secondary" id="submitGuessBtn">Check guess</button>
+          <button class="btn btn-ghost" id="nextRoundBtn" disabled>Next round</button>
+        </div>
+
+        <div class="result" id="resultBox" style="display: none;">
+          <div class="result-line">
+            <span class="label">Target position:</span>
+            <span class="value" id="resultTarget">–</span>
+          </div>
+          <div class="result-line">
+            <span class="label">Your guess:</span>
+            <span class="value" id="resultGuess">–</span>
+          </div>
+          <div class="result-line">
+            <span class="label">Distance:</span>
+            <span class="value" id="resultDistance">–</span>
+          </div>
+          <div class="result-score" id="resultScoreText"></div>
+        </div>
+      </section>
+
+      <!-- Right: How to play / tips -->
+      <section class="panel">
+        <div class="panel-header">
+          <div class="panel-title">Table talk</div>
+          <div class="badge">Rules & tips</div>
+        </div>
+        <div class="info-panel">
+          <p><strong>Roles:</strong> One player is the <strong>Tuner</strong>. Everyone else are <strong>Guessers</strong>.</p>
+          <ul class="info-list">
+            <li><strong>1.</strong> Click <strong>Reveal target</strong> so only the Tuner sees the glowing bar position.</li>
+            <li><strong>2.</strong> The Tuner thinks, then types a single clue that fits that spot on the spectrum.</li>
+            <li><strong>3.</strong> Guessers discuss out loud and move the slider to where they think the target is.</li>
+            <li><strong>4.</strong> Hit <strong>Check guess</strong> to reveal how close you were and score points.</li>
+            <li><strong>5.</strong> Hit <strong>Next round</strong> to get a new spectrum and target. Rotate the Tuner.</li>
+          </ul>
+          <p>
+            You can house-rule scoring however you like. By default, this page gives more points the closer you are.
+          </p>
+          <p class="tiny">
+            Designer’s note: keep the conversation messy. The fun is in arguing whether “coffee” is closer to
+            “lukewarm” or “molten lava.”
+          </p>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const spectrums = [
+      ["Cold", "Scorching"],
+      ["Cheap", "Luxury"],
+      ["Boring", "Wild"],
+      ["Tiny", "Enormous"],
+      ["Obscure", "Mainstream"],
+      ["Safe", "Reckless"],
+      ["Serious", "Ridiculous"],
+      ["Old-fashioned", "Futuristic"],
+      ["Quiet", "Deafening"],
+      ["Useless", "Essential"],
+      ["Honest", "Deceptive"],
+      ["Simple", "Complex"],
+      ["Peaceful", "Chaotic"],
+      ["Realistic", "Absurd"],
+      ["Wholesome", "Cursed"],
+      ["Predictable", "Unpredictable"],
+      ["Light", "Heavy"],
+      ["Friendly", "Hostile"],
+      ["Relaxing", "Stressful"],
+      ["Elegant", "Clunky"]
+    ];
+
+    let currentTarget = Math.floor(Math.random() * 101);
+    let currentSpectrumIndex = 0;
+    let roundNumber = 1;
+    let totalScore = 0;
+    let clueLocked = false;
+    let targetVisible = false;
+    let roundFinished = false;
+
+    const leftLabelEl = document.getElementById("leftLabel");
+    const rightLabelEl = document.getElementById("rightLabel");
+    const spectrumBarEl = document.getElementById("spectrumBar");
+    const targetIndicatorEl = document.getElementById("targetIndicator");
+    const guessIndicatorEl = document.getElementById("guessIndicator");
+    const guessSliderEl = document.getElementById("guessSlider");
+    const clueInputEl = document.getElementById("clueInput");
+    const clueDisplayEl = document.getElementById("clueDisplay");
+    const revealTargetBtn = document.getElementById("revealTargetBtn");
+    const lockClueBtn = document.getElementById("lockClueBtn");
+    const submitGuessBtn = document.getElementById("submitGuessBtn");
+    const nextRoundBtn = document.getElementById("nextRoundBtn");
+    const resultBoxEl = document.getElementById("resultBox");
+    const resultTargetEl = document.getElementById("resultTarget");
+    const resultGuessEl = document.getElementById("resultGuess");
+    const resultDistanceEl = document.getElementById("resultDistance");
+    const resultScoreTextEl = document.getElementById("resultScoreText");
+    const roundNumberEl = document.getElementById("roundNumber");
+    const totalScoreEl = document.getElementById("totalScore");
+    const roleBadgeEl = document.getElementById("roleBadge");
+
+    function setIndicatorPosition(el, value) {
+      const clamped = Math.max(0, Math.min(100, value));
+      el.style.left = clamped + "%";
+    }
+
+    function randomSpectrumIndex() {
+      return Math.floor(Math.random() * spectrums.length);
+    }
+
+    function resetRound() {
+      currentTarget = Math.floor(Math.random() * 101);
+      currentSpectrumIndex = randomSpectrumIndex();
+      const [left, right] = spectrums[currentSpectrumIndex];
+      leftLabelEl.textContent = left;
+      rightLabelEl.textContent = right;
+
+      guessSliderEl.value = 50;
+      setIndicatorPosition(guessIndicatorEl, 50);
+      setIndicatorPosition(targetIndicatorEl, currentTarget);
+
+      clueInputEl.value = "";
+      clueDisplayEl.innerHTML =
+        '<span class="clue-placeholder">Tuner: secretly reveal the target, then type a clue and lock it in.</span>';
+
+      targetVisible = false;
+      clueLocked = false;
+      roundFinished = false;
+
+      targetIndicatorEl.style.opacity = 0;
+      revealTargetBtn.textContent = "Reveal target";
+
+      resultBoxEl.style.display = "none";
+      nextRoundBtn.disabled = true;
+      submitGuessBtn.disabled = false;
+      lockClueBtn.disabled = false;
+
+      roleBadgeEl.textContent = "Tuner sets clue";
+    }
+
+    function computeScore(distance) {
+      if (distance === 0) return 10;
+      if (distance <= 5) return 8;
+      if (distance <= 10) return 6;
+      if (distance <= 20) return 4;
+      if (distance <= 30) return 2;
+      return 0;
+    }
+
+    guessSliderEl.addEventListener("input", () => {
+      setIndicatorPosition(guessIndicatorEl, parseInt(guessSliderEl.value, 10));
+    });
+
+    revealTargetBtn.addEventListener("click", () => {
+      targetVisible = !targetVisible;
+      targetIndicatorEl.style.opacity = targetVisible ? 1 : 0;
+      revealTargetBtn.textContent = targetVisible ? "Hide target" : "Reveal target";
+    });
+
+    lockClueBtn.addEventListener("click", () => {
+      const clue = clueInputEl.value.trim();
+      if (!clue) {
+        alert("Type a clue before locking it in.");
+        return;
+      }
+      clueLocked = true;
+      clueDisplayEl.textContent = '"' + clue + '"';
+      clueInputEl.value = "";
+      clueInputEl.disabled = true;
+      lockClueBtn.disabled = true;
+      roleBadgeEl.textContent = "Guessers discuss & guess";
+    });
+
+    submitGuessBtn.addEventListener("click", () => {
+      if (!clueLocked) {
+        const proceed = confirm(
+          "You haven't locked a clue yet. Continue anyway?"
+        );
+        if (!proceed) return;
+      }
+
+      const guess = parseInt(guessSliderEl.value, 10);
+      const target = currentTarget;
+      const distance = Math.abs(target - guess);
+      const score = computeScore(distance);
+
+      resultTargetEl.textContent = target + " / 100";
+      resultGuessEl.textContent = guess + " / 100";
+      resultDistanceEl.textContent = distance.toString();
+
+      if (score > 0) {
+        resultScoreTextEl.textContent = `Nice sync: +${score} points`;
+        resultScoreTextEl.className = "result-score good";
+      } else {
+        resultScoreTextEl.textContent = "No points this time. New spectrum, new brainwave.";
+        resultScoreTextEl.className = "result-score bad";
+      }
+
+      totalScore += score;
+      totalScoreEl.textContent = totalScore.toString();
+      resultBoxEl.style.display = "block";
+
+      targetVisible = true;
+      targetIndicatorEl.style.opacity = 1;
+      revealTargetBtn.textContent = "Target shown";
+
+      roundFinished = true;
+      submitGuessBtn.disabled = true;
+      nextRoundBtn.disabled = false;
+      clueInputEl.disabled = true;
+      lockClueBtn.disabled = true;
+      roleBadgeEl.textContent = "Round complete";
+    });
+
+    nextRoundBtn.addEventListener("click", () => {
+      if (!roundFinished) {
+        const proceed = confirm(
+          "You haven't checked the guess yet. Go to next round anyway?"
+        );
+        if (!proceed) return;
+      }
+      roundNumber += 1;
+      roundNumberEl.textContent = roundNumber.toString();
+      clueInputEl.disabled = false;
+      resetRound();
+    });
+
+    // Initial setup
+    resetRound();
+  </script>
+</body>
+</html>
